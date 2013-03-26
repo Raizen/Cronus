@@ -39,10 +39,9 @@ Equipe de Desenvolvimento
 - Golen Maker	- Ligleyson Warnielle
 	
 ### Estágiários/Aprendizes
-- Ryuzaki Aiko	- Vilmar Rosset
 - Rayzir	- Guilherme Fontenele
 - PHpedro	- Pedro
 - Eru Yuuko
-- KaduKiller 
+- KaduKiller	- Carlos Salles
 - beckdeveloper
 - Apo
