@@ -5,6 +5,7 @@
 #define	_MMO_H_
 
 #include "cbasetypes.h"
+#include "../common/db.h"
 #include <time.h>
 
 // server->client protocol version
@@ -379,7 +380,8 @@ struct mmo_charstatus {
 	struct hotkey hotkeys[MAX_HOTKEYS];
 #endif
 	bool show_equip;
-	short rename;
+	unsigned short rename;
+	unsigned short slotchange;
 
 	time_t delete_date;
 };
@@ -511,7 +513,9 @@ struct guild {
 	struct guild_expulsion expulsion[MAX_GUILDEXPULSION];
 	struct guild_skill skill[MAX_GUILDSKILL];
 
+    /* TODO: still used for something?|: */
 	unsigned short save_flag; // for TXT saving
+	void *channel;
 };
 
 struct guild_castle {
