@@ -95,6 +95,7 @@ enum e_skill_inf2 {
 	INF2_NO_ENEMY       = 0x1000,
 	INF2_NOLP           = 0x2000, // Spells that can ignore Land Protector
 	INF2_CHORUS_SKILL	= 0x4000, // Chorus skill
+	INF2_CLONE_NOCOPY	= 0x8000, // Clones will not copy this skill
 };
 
 
@@ -1732,7 +1733,6 @@ struct skill_interface {
 	int	(*get_weapontype) ( uint16 skill_id );
 	int	(*get_ammotype) ( uint16 skill_id );
 	int	(*get_ammo_qty) ( uint16 skill_id, uint16 skill_lv );
-	int	(*get_nocast) ( uint16 skill_id );
 	int	(*get_unit_id) (uint16 skill_id,int flag);
 	int	(*get_inf2) ( uint16 skill_id );
 	int	(*get_castcancel) ( uint16 skill_id );
@@ -1866,7 +1866,6 @@ struct skill_interface {
 	bool (*parse_row_castdb) (char* split[], int columns, int current);
 	bool (*parse_row_castnodexdb) (char* split[], int columns, int current);
 	bool (*parse_row_unitdb) (char* split[], int columns, int current);
-	bool (*parse_row_nocastdb) (char* split[], int columns, int current);
 	bool (*parse_row_producedb) (char* split[], int columns, int current);
 	bool (*parse_row_createarrowdb) (char* split[], int columns, int current);
 	bool (*parse_row_abradb) (char* split[], int columns, int current);

@@ -25,6 +25,27 @@
 #define MAX_PC_SKILL_REQUIRE 5
 #define MAX_PC_FEELHATE 3
 
+//Equip indexes constants. (eg: sd->equip_index[EQI_AMMO] returns the index
+//where the arrows are equipped)
+enum equip_index {
+	EQI_ACC_L = 0,
+	EQI_ACC_R,
+	EQI_SHOES,
+	EQI_GARMENT,
+	EQI_HEAD_LOW,
+	EQI_HEAD_MID,
+	EQI_HEAD_TOP,
+	EQI_ARMOR,
+	EQI_HAND_L,
+	EQI_HAND_R,
+	EQI_COSTUME_TOP,
+	EQI_COSTUME_MID,
+	EQI_COSTUME_LOW,
+	EQI_COSTUME_GARMENT,
+	EQI_AMMO,
+	EQI_MAX
+};
+
 struct weapon_data {
 	int atkmods[3];
 	// all the variables except atkmods get zero'ed in each call of status_calc_pc
@@ -116,7 +137,6 @@ struct map_session_data {
 		unsigned int showdelay :1;
 		unsigned int showexp :1;
 		unsigned int showzeny :1;
-		unsigned int mainchat :1; //[LuzZza]
 		unsigned int noask :1; // [LuzZza]
 		unsigned int trading :1; //[Skotlex] is 1 only after a trade has started.
 		unsigned int deal_locked :2; //1: Clicked on OK. 2: Clicked on TRADE
@@ -168,7 +188,7 @@ struct map_session_data {
 	struct registry save_reg;
 
 	struct item_data* inventory_data[MAX_INVENTORY]; // direct pointers to itemdb entries (faster than doing item_id lookups)
-	short equip_index[14];
+	short equip_index[EQI_MAX];
 	unsigned int weight,max_weight;
 	int cart_weight,cart_num,cart_weight_max;
 	int fd;
@@ -365,7 +385,7 @@ struct map_session_data {
 	bool party_joining; // whether the char is accepting party invitation
 	int party_invite, party_invite_account; // for handling party invitation (holds party id and account id)
 	int adopt_invite; // Adoption
-
+	struct guild *guild;/* [Ind/Hercules] speed everything up */
 	int guild_invite,guild_invite_account;
 	int guild_emblem_id,guild_alliance,guild_alliance_account;
 	short guild_x,guild_y; // For guildmate position display. [Skotlex] should be short [zzo]
@@ -475,7 +495,14 @@ struct map_session_data {
 	int friend_req;
 
 	int shadowform_id;
-
+	
+	/* [Ind/Hercules] */
+	struct hChSysCh **channels;
+	unsigned char channel_count;
+	struct hChSysCh *gcbind;
+	bool stealth;
+	unsigned char fontcolor; /* debug-only */
+	
 	// temporary debugging of bug #3504
 	const char* delunit_prevfile;
 	int delunit_prevline;
@@ -537,20 +564,21 @@ enum ammo_type {
 
 //Equip position constants
 enum equip_pos {
-	EQP_HEAD_LOW = 0x0001,
-	EQP_HEAD_MID = 0x0200, //512
-	EQP_HEAD_TOP = 0x0100, //256
-	EQP_HAND_R   = 0x0002,
-	EQP_HAND_L   = 0x0020, //32
-	EQP_ARMOR    = 0x0010, //16
-	EQP_SHOES    = 0x0040, //64
-	EQP_GARMENT  = 0x0004,
-	EQP_ACC_L    = 0x0008,
-	EQP_ACC_R    = 0x0080, //128
-	EQP_COSTUME_HEAD_TOP = 0x0400,
-	EQP_COSTUME_HEAD_MID = 0x0800,
-	EQP_COSTUME_HEAD_LOW = 0x1000,
-	EQP_AMMO     = 0x8000, //32768
+	EQP_HEAD_LOW         = 0x0001,
+	EQP_HEAD_MID         = 0x0200, //512
+	EQP_HEAD_TOP         = 0x0100, //256
+	EQP_HAND_R           = 0x0002, //2
+	EQP_HAND_L           = 0x0020, //32
+	EQP_ARMOR            = 0x0010, //16
+	EQP_SHOES            = 0x0040, //64
+	EQP_GARMENT          = 0x0004, //4
+	EQP_ACC_L            = 0x0008, //8
+	EQP_ACC_R            = 0x0080, //128
+	EQP_COSTUME_HEAD_TOP = 0x0400, //1024
+	EQP_COSTUME_HEAD_MID = 0x0800, //2048
+	EQP_COSTUME_HEAD_LOW = 0x1000, //4096
+	EQP_COSTUME_GARMENT	 = 0x2000, //8192
+	EQP_AMMO             = 0x8000, //32768
 };
 
 #define EQP_WEAPON EQP_HAND_R
@@ -558,7 +586,7 @@ enum equip_pos {
 #define EQP_ARMS (EQP_HAND_R|EQP_HAND_L)
 #define EQP_HELM (EQP_HEAD_LOW|EQP_HEAD_MID|EQP_HEAD_TOP)
 #define EQP_ACC (EQP_ACC_L|EQP_ACC_R)
-#define EQP_COSTUME (EQP_COSTUME_HEAD_TOP|EQP_COSTUME_HEAD_MID|EQP_COSTUME_HEAD_LOW)
+#define EQP_COSTUME (EQP_COSTUME_HEAD_TOP|EQP_COSTUME_HEAD_MID|EQP_COSTUME_HEAD_LOW|EQP_COSTUME_GARMENT)
 
 /// Equip positions that use a visible sprite
 #if PACKETVER < 20110111
@@ -566,26 +594,6 @@ enum equip_pos {
 #else
 	#define EQP_VISIBLE (EQP_HELM|EQP_GARMENT|EQP_COSTUME)
 #endif
-
-//Equip indexes constants. (eg: sd->equip_index[EQI_AMMO] returns the index
-//where the arrows are equipped)
-enum equip_index {
-	EQI_ACC_L = 0,
-	EQI_ACC_R,
-	EQI_SHOES,
-	EQI_GARMENT,
-	EQI_HEAD_LOW,
-	EQI_HEAD_MID,
-	EQI_HEAD_TOP,
-	EQI_ARMOR,
-	EQI_HAND_L,
-	EQI_HAND_R,
-	EQI_COSTUME_TOP,
-	EQI_COSTUME_MID,
-	EQI_COSTUME_LOW,
-	EQI_AMMO,
-	EQI_MAX
-};
 
 #define pc_setdead(sd)        ( (sd)->state.dead_sit = (sd)->vd.dead_sit = 1 )
 #define pc_setsit(sd)         ( (sd)->state.dead_sit = (sd)->vd.dead_sit = 2 )

@@ -43,7 +43,6 @@ char default_codepage[32] = ""; //Feature by irmin.
 
 static struct accreg *accreg_pt;
 unsigned int party_share_level = 10;
-char main_chat_nick[16] = "Main";
 
 // recv. packet list
 int inter_recv_packet_length[] = {
@@ -490,10 +489,10 @@ void mapif_parse_accinfo(int fd) {
 
 	/* it will only get here if we have a single match */
 	if( account_id ) {
-		char userid[NAME_LENGTH], user_pass[NAME_LENGTH], email[40], last_ip[20], lastlogin[30];
+		char userid[NAME_LENGTH], user_pass[NAME_LENGTH], email[40], last_ip[20], lastlogin[30], pincode[5];
 		short level = -1;
 		int logincount = 0,state = 0;
-		if ( SQL_ERROR == Sql_Query(sql_handle, "SELECT `userid`, `user_pass`, `email`, `last_ip`, `group_id`, `lastlogin`, `logincount`, `state` FROM `login` WHERE `account_id` = '%d' LIMIT 1", account_id)
+		if ( SQL_ERROR == Sql_Query(sql_handle, "SELECT `userid`, `user_pass`, `email`, `last_ip`, `group_id`, `lastlogin`, `logincount`, `state`,`pincode` FROM `login` WHERE `account_id` = '%d' LIMIT 1", account_id)
 			|| Sql_NumRows(sql_handle) == 0 ) {
 			if( Sql_NumRows(sql_handle) == 0 ) {
 				inter_to_fd(fd, u_fd, aid,  "No account with ID '%d' was found.", account_id );
@@ -511,6 +510,7 @@ void mapif_parse_accinfo(int fd) {
 			Sql_GetData(sql_handle, 5, &data, NULL); safestrncpy(lastlogin, data, sizeof(lastlogin));
 			Sql_GetData(sql_handle, 6, &data, NULL); logincount = atoi(data);
 			Sql_GetData(sql_handle, 7, &data, NULL); state = atoi(data);
+			Sql_GetData(sql_handle, 8, &data, NULL); safestrncpy(pincode, data, sizeof(pincode));
 		}
 
 		Sql_FreeResult(sql_handle);
@@ -521,8 +521,12 @@ void mapif_parse_accinfo(int fd) {
 		inter_to_fd(fd, u_fd, aid, "-- Account %d --", account_id );
 		inter_to_fd(fd, u_fd, aid, "User: %s | GM Group: %d | State: %d", userid, level, state );
 
-		if (level < castergroup) /* only show pass if your gm level is greater than the one you're searching for */
-			inter_to_fd(fd, u_fd, aid, "Password: %s", user_pass );
+		if (level < castergroup) { /* only show pass if your gm level is greater than the one you're searching for */
+			if( strlen(pincode) )
+				inter_to_fd(fd, u_fd, aid, "Password: %s (PIN:%s)", user_pass, pincode );
+			else
+				inter_to_fd(fd, u_fd, aid, "Password: %s", user_pass );
+		}
 
 		inter_to_fd(fd, u_fd, aid, "Account e-mail: %s", email);
 		inter_to_fd(fd, u_fd, aid, "Last IP: %s (%s)", last_ip, geoip_getcountry(str2ip(last_ip)) );
@@ -726,8 +730,6 @@ static int inter_config_read(const char* cfgName)
 			party_share_level = atoi(w2);
 		else if(!strcmpi(w1,"log_inter"))
 			log_inter = atoi(w2);
-		else if(!strcmpi(w1,"main_chat_nick"))
-			safestrncpy(main_chat_nick, w2, sizeof(main_chat_nick));
 		else if(!strcmpi(w1,"import"))
 			inter_config_read(w2);
 	}
